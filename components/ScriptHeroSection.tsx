@@ -1,21 +1,19 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ArrowRight, Sparkles, Shield } from 'lucide-react';
 import { SkiperButton } from '@skiper-ui/skiper40';
-import WebGLFallbackBoundary, { checkWebGLSupport } from './WebGLFallbackBoundary';
+import WebGLFallbackBoundary from './WebGLFallbackBoundary';
 
 /**
  * Procedural embroidered 'Q.S.N.' texture generator
  * Renders high-resolution white embroidered lettering with tactical glow
  */
 function useQsnEmbroideredTexture() {
-  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
+  return useMemo(() => {
+    if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 256;
@@ -26,21 +24,15 @@ function useQsnEmbroideredTexture() {
       ctx.font = '900 110px "Courier New", monospace, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // Subtle embroidered stitching glow effect
+      // Embroidered stitching glow effect
       ctx.shadowColor = 'rgba(0, 68, 255, 0.9)';
       ctx.shadowBlur = 14;
       ctx.fillText('Q.S.N.', 256, 128);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.needsUpdate = true;
-    setTexture(tex);
-
-    return () => {
-      tex.dispose();
-    };
+    return tex;
   }, []);
-
-  return texture;
 }
 
 // 3D Creature wearing Navy Blue Fitted Cap with 'Q.S.N.' embroidered in white on front (NO halo)
@@ -94,13 +86,13 @@ function CreatureCreature({ mousePos }: { mousePos: { x: number; y: number } }) 
 
   return (
     <group ref={headRef} position={[0, 0, 0]}>
-      {/* Creature Skull / Body Structure */}
+      {/* Creature Skull / Body Structure - Polished Midnight Noir */}
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[1, 64, 64]} />
         <meshStandardMaterial
-          color="#0B132B"
-          metalness={0.92}
-          roughness={0.15}
+          color="#0F172A"
+          metalness={0.88}
+          roughness={0.2}
           envMapIntensity={1.5}
         />
       </mesh>
@@ -109,26 +101,26 @@ function CreatureCreature({ mousePos }: { mousePos: { x: number; y: number } }) 
       <mesh position={[0, 0.24, -0.04]} rotation={[-0.1, 0, 0]}>
         <sphereGeometry args={[1.045, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.52]} />
         <meshStandardMaterial
-          color="#061838"
-          roughness={0.8}
-          metalness={0.12}
+          color="#0A265E"
+          roughness={0.55}
+          metalness={0.25}
         />
       </mesh>
 
       {/* NAVY BLUE FITTED CAP - FLAT BRIM / VISOR */}
       <mesh position={[0, 0.38, 0.96]} rotation={[0.22, 0, 0]}>
-        <boxGeometry args={[1.18, 0.045, 0.65]} />
+        <boxGeometry args={[1.2, 0.045, 0.68]} />
         <meshStandardMaterial
-          color="#041026"
-          roughness={0.75}
-          metalness={0.15}
+          color="#071D47"
+          roughness={0.5}
+          metalness={0.3}
         />
       </mesh>
 
       {/* NAVY BLUE FITTED CAP - TOP BUTTON (SQUATCHEE) */}
       <mesh position={[0, 1.28, -0.14]}>
         <sphereGeometry args={[0.07, 16, 16]} />
-        <meshStandardMaterial color="#061838" roughness={0.7} metalness={0.2} />
+        <meshStandardMaterial color="#0A265E" roughness={0.4} metalness={0.3} />
       </mesh>
 
       {/* WHITE 'Q.S.N.' EMBROIDERED FRONT PANEL */}
@@ -153,15 +145,15 @@ function CreatureCreature({ mousePos }: { mousePos: { x: number; y: number } }) 
       {/* Left Eye Globe */}
       <mesh ref={leftEyeRef} position={[-0.28, 0.15, 0.88]}>
         <sphereGeometry args={[0.16, 32, 32]} />
-        <meshStandardMaterial color="#FFFFFF" metalness={0.1} roughness={0.2} />
+        <meshStandardMaterial color="#FFFFFF" metalness={0.05} roughness={0.15} />
       </mesh>
-      {/* Left Pupil (Electric Metallic Navy Blue Glowing Core) */}
+      {/* Left Pupil (Electric Glowing Navy Blue Core) */}
       <mesh ref={leftPupilRef} position={[-0.28, 0.15, 1.02]}>
-        <sphereGeometry args={[0.07, 32, 32]} />
+        <sphereGeometry args={[0.075, 32, 32]} />
         <meshStandardMaterial
           color="#0044FF"
-          emissive="#0033CC"
-          emissiveIntensity={3.2}
+          emissive="#0044FF"
+          emissiveIntensity={3.8}
           toneMapped={false}
         />
       </mesh>
@@ -169,15 +161,15 @@ function CreatureCreature({ mousePos }: { mousePos: { x: number; y: number } }) 
       {/* Right Eye Globe */}
       <mesh ref={rightEyeRef} position={[0.28, 0.15, 0.88]}>
         <sphereGeometry args={[0.16, 32, 32]} />
-        <meshStandardMaterial color="#FFFFFF" metalness={0.1} roughness={0.2} />
+        <meshStandardMaterial color="#FFFFFF" metalness={0.05} roughness={0.15} />
       </mesh>
-      {/* Right Pupil (Electric Metallic Navy Blue Glowing Core) */}
+      {/* Right Pupil (Electric Glowing Navy Blue Core) */}
       <mesh ref={rightPupilRef} position={[0.28, 0.15, 1.02]}>
-        <sphereGeometry args={[0.07, 32, 32]} />
+        <sphereGeometry args={[0.075, 32, 32]} />
         <meshStandardMaterial
           color="#0044FF"
-          emissive="#0033CC"
-          emissiveIntensity={3.2}
+          emissive="#0044FF"
+          emissiveIntensity={3.8}
           toneMapped={false}
         />
       </mesh>
@@ -189,12 +181,9 @@ export const ScriptHeroSection: React.FC = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [rawMouse, setRawMouse] = useState({ x: 0, y: 0 });
   const [isClient, setIsClient] = useState(false);
-  const [webGLSupported, setWebGLSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
     setIsClient(true);
-    const supported = checkWebGLSupport();
-    setWebGLSupported(supported);
 
     const handleMouseMove = (e: MouseEvent) => {
       const normX = (e.clientX / window.innerWidth) * 2 - 1;
@@ -217,9 +206,9 @@ export const ScriptHeroSection: React.FC = () => {
 
   return (
     <section className="relative w-full min-h-screen text-white flex flex-col justify-between overflow-hidden px-6 md:px-12 pt-28 md:pt-32 pb-16 select-none bg-transparent">
-      {/* High-Resolution Symmetrical HOME PAGE.jpeg Background Layer - 100% Visible */}
+      {/* High-Resolution Symmetrical HOME PAGE.jpeg Background Layer - Soft Atmospheric Noir */}
       <div
-        className="absolute inset-0 pointer-events-none z-0 opacity-100 transition-opacity duration-700"
+        className="absolute inset-0 pointer-events-none z-0 opacity-35 transition-opacity duration-700"
         style={{
           backgroundImage: "url('/assets/HOME%20PAGE.jpeg')",
           backgroundSize: 'contain',
@@ -260,16 +249,17 @@ export const ScriptHeroSection: React.FC = () => {
       </div>
 
       {/* 3D Canvas Center Stage - WebGL Context Guarded with Fallback Boundary */}
-      <div className="relative z-20 w-full h-[52vh] md:h-[60vh] flex items-center justify-center my-auto">
+      <div className="relative z-20 w-full h-[54vh] min-h-[420px] max-h-[620px] flex items-center justify-center my-auto">
         <WebGLFallbackBoundary fallbackImage="/HOME PAGE.jpeg" fallbackImageSrc="/HOME PAGE.jpeg">
-          {isClient && webGLSupported && (
+          {isClient && (
             <Canvas
-              camera={{ position: [0, 0, 3.4], fov: 45 }}
+              camera={{ position: [0, 0, 3.2], fov: 45 }}
               className="w-full h-full"
               style={{ background: 'transparent' }}
               gl={{
                 alpha: true,
-                powerPreference: 'default',
+                antialias: true,
+                powerPreference: 'high-performance',
                 failIfMajorPerformanceCaveat: false,
                 preserveDrawingBuffer: false,
               }}
@@ -280,11 +270,13 @@ export const ScriptHeroSection: React.FC = () => {
                 });
               }}
             >
-              <ambientLight intensity={0.7} />
-              <directionalLight position={[4, 5, 5]} intensity={1.8} color="#FFFFFF" />
-              <pointLight position={[-3, -2, -2]} intensity={2.8} color="#0044FF" />
-              <pointLight position={[3, 3, -1]} intensity={2.2} color="#0033CC" />
-              <Float speed={2} rotationIntensity={0.2} floatIntensity={0.3}>
+              <ambientLight intensity={1.4} />
+              <directionalLight position={[0, 4, 5]} intensity={2.5} color="#FFFFFF" />
+              <directionalLight position={[-4, 2, 4]} intensity={1.8} color="#94A3B8" />
+              <pointLight position={[3, 2, 2]} intensity={2.4} color="#0044FF" />
+              <pointLight position={[-3, -1, 2]} intensity={2.2} color="#0033CC" />
+              <pointLight position={[0, 0, 3.5]} intensity={1.8} color="#0044FF" />
+              <Float speed={1.8} rotationIntensity={0.15} floatIntensity={0.25}>
                 <CreatureCreature mousePos={mousePos} />
               </Float>
               <OrbitControls enableZoom={false} enablePan={false} maxPolarAngle={Math.PI / 1.8} minPolarAngle={Math.PI / 2.5} />
