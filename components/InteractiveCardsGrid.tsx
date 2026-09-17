@@ -1,7 +1,7 @@
 import React, { useState, MouseEvent, useRef } from 'react';
 import Image from 'next/image';
 import { Film, Sparkles, Compass, ArrowUpRight, ExternalLink, Shield, CheckCircle2, Send, X, Users } from 'lucide-react';
-import { SkiperButton } from '@skiper-ui/skiper40';
+import { SkiperButton } from '../lib/vibe-coder/skiper40';
 
 export interface InteractiveCardProps {
   id: string;

@@ -4,7 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ArrowRight, Sparkles, Shield } from 'lucide-react';
-import { SkiperButton } from '@skiper-ui/skiper40';
+import { SkiperButton } from '../lib/vibe-coder/skiper40';
 import WebGLFallbackBoundary from './WebGLFallbackBoundary';
 
 /**

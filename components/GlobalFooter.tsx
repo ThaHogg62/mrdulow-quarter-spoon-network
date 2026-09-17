@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Send, X, Shield, CheckCircle2 } from 'lucide-react';
-import { SkiperButton } from '@skiper-ui/skiper40';
+import { SkiperButton } from '../lib/vibe-coder/skiper40';
 
 export const GlobalFooter: React.FC = () => {
   const [emailModalOpen, setEmailModalOpen] = useState(false);

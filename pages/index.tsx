@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Shield, Sparkles, ExternalLink } from 'lucide-react';
-import PixelTrail from '@fancy/pixel-trail';
+import PixelTrail from '../lib/vibe-coder/pixel-trail';
 import Preloader from '../components/Preloader';
 import GlobalFooter from '../components/GlobalFooter';
 
