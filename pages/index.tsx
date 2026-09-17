@@ -28,7 +28,7 @@ const ScrollStorytellingSection = dynamic(
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen bg-[#000000] text-white font-sans selection:bg-[#0044FF] selection:text-white overflow-x-hidden">
+    <div className="relative min-h-screen bg-[#000000] text-white font-sans selection:bg-[#0044FF] selection:text-white">
       <Head>
         <title>Quarter Spoon Network | Pure Space Noir</title>
         <meta

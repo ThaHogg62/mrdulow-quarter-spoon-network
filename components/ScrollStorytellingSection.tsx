@@ -1,27 +1,22 @@
-﻿import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Play, ArrowDown, Disc, Shield, ExternalLink } from 'lucide-react';
 import { Liveline } from 'liveline';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 type PlaybackMode = 'idle' | 'playing';
 
 export const ScrollStorytellingSection: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const rafRef = useRef<number>(0);
+  const rawProgressRef = useRef(0);
+  const smoothProgressRef = useRef(0);
 
-  const [progress, setProgress] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('idle');
   const [fadeOpacity, setFadeOpacity] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [vuLevels, setVuLevels] = useState({ left: 78, right: 72 });
-
-  const animObjRef = useRef({ value: 0 });
 
   // 84 BPM G-Funk cadence VU simulation
   useEffect(() => {
@@ -35,35 +30,40 @@ export const ScrollStorytellingSection: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // GSAP ScrollTrigger: map natural scroll through 800vh section to progress 0â†’1
+  // Pure native scroll driver — no GSAP, no overflow manipulation.
+  // Outer section is 600vh. We track how far user has scrolled through it (0->1).
+  // rAF loop lerps smoothly toward the raw value each frame.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
     const section = sectionRef.current;
     if (!section) return;
 
-    const st = ScrollTrigger.create({
-      trigger: section,
-      start: 'top top',
-      end: 'bottom bottom',
-      scrub: 0.6,
-      onUpdate: (self) => {
-        const next = Math.min(1, Math.max(0, self.progress));
-        gsap.to(animObjRef.current, {
-          value: next,
-          duration: 0.25,
-          ease: 'power2.out',
-          overwrite: true,
-          onUpdate: () => {
-            setProgress(animObjRef.current.value);
-          },
-        });
-      },
-    });
+    const computeProgress = () => {
+      const rect = section.getBoundingClientRect();
+      const scrollableHeight = section.offsetHeight - window.innerHeight;
+      if (scrollableHeight <= 0) return;
+      const scrolled = -rect.top;
+      rawProgressRef.current = Math.min(1, Math.max(0, scrolled / scrollableHeight));
+    };
 
-    return () => { st.kill(); };
+    const animate = () => {
+      const diff = rawProgressRef.current - smoothProgressRef.current;
+      if (Math.abs(diff) > 0.0001) {
+        smoothProgressRef.current += diff * 0.12;
+        setDisplayProgress(smoothProgressRef.current);
+      }
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('scroll', computeProgress, { passive: true });
+    computeProgress();
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      window.removeEventListener('scroll', computeProgress);
+      cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
-  // Video playback handler
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
     const t = videoRef.current.currentTime;
@@ -74,8 +74,7 @@ export const ScrollStorytellingSection: React.FC = () => {
       setFadeOpacity(1);
       window.location.href = 'https://www.youtube.com/@SeenYouScream';
     } else {
-      const p = (t - 0.08) / (10.0 - 0.08);
-      setFadeOpacity(Math.min(1, Math.max(0, p)));
+      setFadeOpacity(Math.min(1, Math.max(0, (t - 0.08) / (10.0 - 0.08))));
     }
   };
 
@@ -98,42 +97,34 @@ export const ScrollStorytellingSection: React.FC = () => {
     }, 60);
   };
 
-  const isFullView = progress >= 0.95;
-  const sideBoxesOpacity = Math.max(0, 1 - progress * 2.5);
-  const instructionOpacity = Math.max(0, 1 - progress * 2.2);
+  const p = displayProgress;
+  const isFullView = p >= 0.95;
+  const sideBoxesOpacity = Math.max(0, 1 - p * 2.5);
+  const instructionOpacity = Math.max(0, 1 - p * 2.2);
 
-  // Dynamic sizing: 9:16 portrait â†’ full 16:9 viewport
   const startW = 'min(360px, calc(100vw - 32px))';
   const startH = 'min(640px, calc(100vh - 120px))';
-  const p = progress.toFixed(4);
-  const cardWidth = progress >= 0.99 ? '100vw' : `calc(${startW} + (100vw - ${startW}) * ${p})`;
-  const cardHeight = progress >= 0.99 ? '100vh' : `calc(${startH} + (100vh - ${startH}) * ${p})`;
-  const cardRadius = progress >= 0.99 ? '0px' : `calc(20px * ${(1 - progress).toFixed(4)})`;
+  const pf = p.toFixed(4);
+  const cardWidth  = p >= 0.99 ? '100vw' : `calc(${startW} + (100vw - ${startW}) * ${pf})`;
+  const cardHeight = p >= 0.99 ? '100vh' : `calc(${startH} + (100vh - ${startH}) * ${pf})`;
+  const cardRadius = p >= 0.99 ? '0px'   : `calc(20px * ${(1 - p).toFixed(4)})`;
 
   return (
-    /*
-     * 800vh outer section â€” gives browser 800vh of natural scroll distance.
-     * GSAP ScrollTrigger maps this to progress 0â†’1.
-     * Inner sticky div stays pinned in the viewport during the entire scroll.
-     */
     <section
       id="storytelling-section"
       ref={sectionRef}
       className="relative w-full select-none"
-      style={{ height: '800vh' }}
+      style={{ height: '600vh' }}
     >
-      {/* Sticky viewport-height inner panel */}
-      <div
-        className="sticky top-0 w-full h-screen bg-[#000000] text-white overflow-hidden flex items-center justify-center"
-        style={{ zIndex: 10 }}
-      >
+      {/* Sticky inner viewport panel */}
+      <div className="sticky top-0 w-full h-screen bg-[#000000] text-white overflow-hidden flex items-center justify-center">
         {/* Ambient atmosphere */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#000000] via-[#0B132B]/30 to-[#000000] pointer-events-none" />
 
         {/* Left editorial telemetry boxes */}
         <div
-          style={{ opacity: sideBoxesOpacity, pointerEvents: progress > 0.35 ? 'none' : 'auto' }}
-          className="absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 z-20 hidden xl:flex flex-col max-w-sm gap-4 text-left transition-opacity duration-150"
+          style={{ opacity: sideBoxesOpacity, pointerEvents: p > 0.35 ? 'none' : 'auto' }}
+          className="absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 z-20 hidden xl:flex flex-col max-w-sm gap-4 text-left"
         >
           <div>
             <span className="font-mono text-[11px] text-[#0044FF] tracking-[0.25em] uppercase block mb-1 font-bold">
@@ -144,7 +135,6 @@ export const ScrollStorytellingSection: React.FC = () => {
             </h2>
           </div>
 
-          {/* BOX 1: VU Meters + Liveline Waveform */}
           <div className="p-4 rounded-xl bg-[#05070F]/90 border border-white/15 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.8)]">
             <div className="flex items-center justify-between font-mono text-[11px] text-[#94A3B8] mb-2.5 pb-2 border-b border-white/10">
               <span className="flex items-center gap-2 text-white font-bold">
@@ -188,7 +178,6 @@ export const ScrollStorytellingSection: React.FC = () => {
             </div>
           </div>
 
-          {/* BOX 2: Spatial Vector Lock */}
           <div className="p-4 rounded-xl bg-[#05070F]/90 border border-white/15 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.8)]">
             <div className="flex items-center justify-between font-mono text-[10px] text-[#94A3B8] mb-2 pb-1.5 border-b border-white/10">
               <span className="flex items-center gap-1.5 text-white font-bold">
@@ -201,17 +190,23 @@ export const ScrollStorytellingSection: React.FC = () => {
               OLED COORD: <span className="text-[#0044FF]">[-0.45, 0.62, 0.10]</span>
             </div>
             <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-              Spatial Cartesian coordinates and high-bitrate video stream specs. Vector-locked with zero character bleed.
+              Spatial Cartesian coordinates and high-bitrate video stream specs. Zero character bleed.
             </p>
           </div>
         </div>
 
-        {/* CENTER: CUTSCENE.jpeg expanding from 9:16 â†’ full 16:9 */}
+        {/* CENTER: CUTSCENE.jpeg expanding card 9:16 -> 16:9 */}
         <div
-          style={{ width: cardWidth, height: cardHeight, borderRadius: cardRadius, maxWidth: progress >= 0.99 ? '100vw' : '100%', maxHeight: progress >= 0.99 ? '100vh' : '100%' }}
-          className="relative bg-[#05070F] border border-white/20 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.95)] flex items-center justify-center"
+          style={{
+            width: cardWidth,
+            height: cardHeight,
+            borderRadius: cardRadius,
+            maxWidth: p >= 0.99 ? '100vw' : '100%',
+            maxHeight: p >= 0.99 ? '100vh' : '100%',
+          }}
+          className="relative bg-[#05070F] border border-white/20 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.95)]"
         >
-          {/* Static CUTSCENE image */}
+          {/* CUTSCENE image */}
           <div
             style={{ opacity: playbackMode === 'playing' ? 0 : 1, pointerEvents: playbackMode === 'playing' ? 'none' : 'auto' }}
             className="relative w-full h-full overflow-hidden transition-opacity duration-300"
@@ -224,22 +219,27 @@ export const ScrollStorytellingSection: React.FC = () => {
               className="object-cover object-center z-0"
             />
 
-            {/* Scroll instruction */}
+            {/* Scroll instruction prompt */}
             <div
               style={{ opacity: isFullView ? 0 : instructionOpacity, pointerEvents: isFullView ? 'none' : 'auto', transition: 'opacity 0.2s ease' }}
-              className="absolute bottom-6 inset-x-0 z-30 flex flex-col items-center justify-center"
+              className="absolute bottom-6 inset-x-0 z-30 flex items-center justify-center"
             >
               <div className="px-5 py-2.5 rounded-full bg-black/85 border border-[#0044FF]/60 shadow-[0_0_25px_rgba(0,68,255,0.4)] backdrop-blur-md flex items-center gap-2 animate-pulse">
                 <span className="font-mono text-[11px] font-bold text-white uppercase tracking-wider">
-                  SCROLL DOWN TO REVEAL FULL VIEW &amp; ENTER THE NETWORK
+                  SCROLL DOWN TO EXPAND &amp; ENTER THE NETWORK
                 </span>
                 <ArrowDown className="w-3.5 h-3.5 text-[#0044FF] animate-bounce" />
               </div>
             </div>
 
-            {/* CTA: ENTER THE NETWORK */}
+            {/* CTA: ENTER THE NETWORK — appears at full expansion */}
             <div
-              style={{ opacity: isFullView ? 1 : 0, pointerEvents: isFullView ? 'auto' : 'none', transform: isFullView ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.92)', transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
+              style={{
+                opacity: isFullView ? 1 : 0,
+                pointerEvents: isFullView ? 'auto' : 'none',
+                transform: isFullView ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.92)',
+                transition: 'opacity 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1)',
+              }}
               className="absolute bottom-8 left-8 md:left-12 z-30 flex items-center gap-4"
             >
               <button
@@ -276,7 +276,10 @@ export const ScrollStorytellingSection: React.FC = () => {
               onEnded={handleVideoEnded}
               className="absolute inset-0 w-full h-full object-cover z-0"
             />
-            <div className="absolute inset-0 bg-[#000000] pointer-events-none z-10 transition-opacity duration-75" style={{ opacity: fadeOpacity }} />
+            <div
+              className="absolute inset-0 bg-[#000000] pointer-events-none z-10 transition-opacity duration-75"
+              style={{ opacity: fadeOpacity }}
+            />
             <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between px-4 py-2.5 rounded-xl bg-black/70 backdrop-blur-md border border-white/10">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
@@ -289,15 +292,15 @@ export const ScrollStorytellingSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Right progress bar */}
+        {/* Right progress indicator */}
         <div
           style={{ opacity: sideBoxesOpacity }}
-          className="absolute right-6 lg:right-12 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col items-center gap-3 transition-opacity duration-150"
+          className="absolute right-6 lg:right-12 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col items-center gap-3"
         >
           <div className="h-32 w-0.5 bg-white/10 rounded-full overflow-hidden">
-            <div className="w-full bg-[#0044FF] rounded-full transition-all duration-100" style={{ height: `${Math.round(progress * 100)}%` }} />
+            <div className="w-full bg-[#0044FF] rounded-full" style={{ height: `${Math.round(p * 100)}%` }} />
           </div>
-          <div className="font-mono text-[10px] text-white/40">{Math.round(progress * 100)}%</div>
+          <div className="font-mono text-[10px] text-white/40">{Math.round(p * 100)}%</div>
         </div>
       </div>
     </section>
