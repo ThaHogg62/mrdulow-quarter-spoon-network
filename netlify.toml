@@ -1,0 +1,29 @@
+[build]
+  command = "npx prisma generate && npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "20.x"
+  SEEN_MAX_ALLOC_SIZE = "4096"
+  PRISMA_CLI_BINARY_TARGETS = "rhel-openssl-3.0.x"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["prisma/schema.prisma"]
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/dashboard"
+  status = 301

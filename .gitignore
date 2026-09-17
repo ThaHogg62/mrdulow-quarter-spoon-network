@@ -1,0 +1,23 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing & build
+/coverage
+/.next/
+/out/
+/build
+
+# environment & secrets
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# netlify & prisma
+/.netlify
+/prisma/migrations/dev
+*.log
+*.tsbuildinfo

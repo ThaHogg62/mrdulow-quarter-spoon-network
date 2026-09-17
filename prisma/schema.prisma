@@ -1,0 +1,107 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+enum ServiceType {
+  UNDA_THA_RADAR_FILMZ
+  THA_VISUAL_LAB
+  ON_THA_SPOT_CONSULTING
+  OFF_THA_GRID_TEEZ
+  THA_HOGGZ_MUZICC_STOW
+}
+
+enum RequestStatus {
+  PENDING
+  REVIEWED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SlotStatus {
+  AVAILABLE
+  LEASED
+  CONFIRMED
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String?
+  provider      String
+  profilePicUrl String?         @default("https://hoggzvisionqse.netlify.app/default-avatar.png")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  requests      ServiceRequest[]
+  teeOrders     CustomTeeOrder[]
+  sessions      Session[]
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model ServiceRequest {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceType    ServiceType
+  subjectLine    String
+  projectDetails String        @db.Text
+  status         RequestStatus @default(PENDING)
+  submittedAt    DateTime      @default(now())
+}
+
+model CustomTeeOrder {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  designTitle    String
+  garmentSize    String
+  fabricColor    String
+  customText     String?
+  details        String        @db.Text
+  orderStatus    RequestStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  source    String   @default("Landing Page")
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+}
+
+model ApparelInventory {
+  id           String   @id @default(uuid())
+  sku          String   @unique
+  garmentType  String
+  color        String
+  size         String
+  stockLevel   Int      @default(100)
+  reorderPoint Int      @default(10)
+  updatedAt    DateTime @updatedAt
+}
+
+model ConsultingSlot {
+  id           String     @id @default(uuid())
+  startTime    DateTime   @unique
+  endTime      DateTime
+  status       SlotStatus @default(AVAILABLE)
+  leasedAt     DateTime?
+  clientName   String?
+  clientEmail  String?
+  meetLink     String?
+}
